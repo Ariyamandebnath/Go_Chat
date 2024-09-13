@@ -11,33 +11,32 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 func reader(conn *websocket.Conn) {
 	for {
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			log.Println(err)
+			log.Println("Error reading message:", err)
 			return
 		}
-		fmt.Println(string(p))
+		fmt.Println("Received:", string(p))
 
 		if err := conn.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
+			log.Println("Error writing message:", err)
 			return
 		}
-
 	}
 }
 
 func serveWs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Host)
+	fmt.Println("Client connected:", r.Host)
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error upgrading to WebSocket:", err)
+		return // Return to avoid calling reader on a nil ws
 	}
 
 	reader(ws)
@@ -53,5 +52,8 @@ func setupRoutes() {
 
 func main() {
 	setupRoutes()
-	http.ListenAndServe(":8080", nil)
+	log.Println("Server started on :8000")
+	if err := http.ListenAndServe(":8000", nil); err != nil {
+		log.Fatal("ListenAndServe:", err)
+	}
 }
